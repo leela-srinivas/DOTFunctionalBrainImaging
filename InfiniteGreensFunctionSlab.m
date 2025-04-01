@@ -16,14 +16,23 @@ voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped a
 
 nX = size(X,1); nY = size(X,2); nZ = size(X,3); % volume is nX x nY x nZ voxels
 
-srcPos = [0 0 0]; % source position, in 3D coordinates 
+srcPos = [0 10 0]; % source position, in 3D coordinates 
+detPos = [0 -10 0];
 
 r = pdist2(srcPos,voxCrd); % distance from source to each voxel
+r2 = pdist2(voxCrd, detPos);
 
 GsAnalytic = 1./(4*pi*D*r).*exp(-mu_eff*r); % Green's function, each voxel
+GsAnalyticDet = 1./(4*pi*D*r2).*exp(-mu_eff*r2); % Green's function, each voxel to detector
 
 tmp = reshape(GsAnalytic,nX,nY,nZ); % reshape as 3D volume
 figure, sliceViewer(tmp,'Colormap',hot(256)); % simple viewer
+title("Simple Viewer, Coordinates = " + srcPos);
 
 figure, sliceViewer(log10(tmp),'Colormap',hot(256)); % simple viewer, log compressed
+title("Simple Viewer, Log Compressed, Coordinates = " + srcPos);
 
+
+tmpDet = reshape(GsAnalyticDet,nX,nY,nZ);
+figure, sliceViewer(tmpDet,'Colormap',hot(256)); % simple viewer
+figure, sliceViewer(log10(tmpDet),'Colormap',hot(256)); % simple viewer, log compressed
