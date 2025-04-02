@@ -1,11 +1,8 @@
 %% Forward Problem Light Propagation Model
 % Created March 31st, 2025
-% Last Updated: April 1st, 2025
-% Note: run after Infinite Greens Function Slab.m
+% Last Updated: April 2nd, 2025
 
 close all; clear
-
-%% Visualize in 3D
 
 %% Global Variable Declarations: properties of the brain we're trying to image
 global mua musp nu D xBnds yBnds zBnds mmX mmY mmZ X Y Z voxCrd;
@@ -22,19 +19,31 @@ voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped a
 
 [Y X Z] = meshgrid(yBnds(1):mmY:yBnds(2), xBnds(1):mmX:xBnds(2), zBnds(1):mmZ:zBnds(2)); % generate coordinates for slab 
 
-%% idk yet
-N = 1; % number of SD pairs
-srcPos = [0 10 0]; % example, not committed to this
-detPos = [0 -10 0]; % example, not committed to this
+%% Visualize in 3D
 
-tmpSrc2Voxels = greensSrc(srcPos);
-tmpVoxels2Det = greensDet(detPos);
-tmpSrc2Det = greensSrc2Det(srcPos, detPos);
 
-% matrix = 1/D * tmpSrc2Voxes * tmpVoxes2Det
+
+%% Sensitivity Matrix Generation
+N = 2; % number of SD pairs (will probably need separate code generating these pairs later on
+
+srcs = [0 30 0; -45 0 0];
+dets = [0 -30 0; 45 0 0];
+
+tmpSrc2Voxels = [greensSrc(srcs(1, :)); greensSrc(srcs(2, :))];
+tmpVoxels2Det = [greensDet(dets(1, :)) greensDet(dets(2, :))];
+
+tmpSrc2Det = zeros(1, N);
+tmpSrc2Det = [greensSrc2Det(srcs(1, :), dets(1, :)), greensSrc2Det(srcs(2, :), dets(2, :))];
+% 
+sensitivityMatrix = zeros(N, length(tmpSrc2Voxels));
+
+for i=1:N
+    %tmpSrc2Dets(i) = greensSrc2Det(srcPos1, detPos1);
+    sensitivityMatrix(i, :) = 1/D * tmpSrc2Voxels(i, :) .* tmpVoxels2Det(:, i).' / tmpSrc2Det(i);
+end
 
 % Code from InfiniteGreensFunctionSlab.m
-function tmp = greensSrc(pos)
+function GsAnalytic = greensSrc(pos)
 
     mua = .0192; % flags.op.mua_gray=[0.0180,0.0192];
     musp = 0.6726; % flags.op.musp_gray=[0.8359,0.6726];
@@ -60,7 +69,7 @@ function tmp = greensSrc(pos)
 
 end
 
-function tmp = greensDet(pos)
+function GsAnalytic = greensDet(pos)
 
     mua = .0192; % flags.op.mua_gray=[0.0180,0.0192];
     musp = 0.6726; % flags.op.musp_gray=[0.8359,0.6726];
