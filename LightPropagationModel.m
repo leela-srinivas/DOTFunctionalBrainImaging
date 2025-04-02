@@ -31,7 +31,7 @@ tmpSrc2Voxels = greensSrc(srcPos);
 tmpVoxels2Det = greensDet(detPos);
 tmpSrc2Det = greensSrc2Det(srcPos, detPos);
 
-% matrix = 1/D * tmpSrc2Voxes * tmpVoxes2Det
+matrix = 1/D * tmpSrc2Voxels .* tmpVoxels2Det;
 
 % Code from InfiniteGreensFunctionSlab.m
 function tmp = greensSrc(pos)
