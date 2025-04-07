@@ -14,7 +14,7 @@ nu = 1.4;
 D = 1/(3*(mua+musp));
 
 % Define bounds on medium
-xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 30];  
+xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 1];  
 mmX = 2; mmY = 2; mmZ = 2; 
 voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped as 1D vector
 
@@ -57,15 +57,14 @@ if debug; disp(srcs); end
 N = 4 * NPerWall;
 numMeasurements = N * N - 1;
 tmpSrc2Det = zeros(1, numMeasurements);
-tmpSrc2Voxels = zeros(numMeasurements, 240);
-tmpVoxels2Dets = zeros(240, numMeasurements);
+tmpSrc2Voxels = zeros(numMeasurements, 16);
+tmpVoxels2Dets = zeros(16, numMeasurements);
 
 for i = 1:N
     for j = 1:N - 1
-        tmpSrc2Voxels(i * j, :) = greensSrc(srcs(i, :));
-        tmpVoxels2Dets(:, i * j) = greensDet(dets(i, :));
+        tmpSrc2Voxels(((i - 1) * N + j), :) = greensSrc(srcs(i, :));
+        tmpVoxels2Dets(:, ((i - 1) * N + j)) = greensDet(dets(i, :));
     end
-    disp(i);
     tmpSrc2Det(i) = greensSrc2Det(srcs(i, :), dets(i, :));
 end
 % tmpSrc2Voxels = [greensSrc(srcs(1, :)); greensSrc(srcs(2, :))];
@@ -76,11 +75,13 @@ end
 % tmpSrc2Det = zeros(1, N);
 % tmpSrc2Det = [greensSrc2Det(srcs(1, :), dets(1, :)), greensSrc2Det(srcs(2, :), dets(2, :))];
 % % 
-sensitivityMatrix = zeros(numMeasurements, length(tmpSrc2Voxels));
 
-for k=1:numMeasurements
+%sensitivityMatrix = zeros(numMeasurements, length(tmpSrc2Voxels));
+
+for k=1:16
     %tmpSrc2Dets(i) = greensSrc2Det(srcPos1, detPos1);
-    sensitivityMatrix(k, :) = 1/D * tmpSrc2Voxels(k, :) .* tmpVoxels2Dets(:, k).' / tmpSrc2Det(k);
+    disp(k)
+    sensitivityMatrix(k, :) = 1/D * tmpSrc2Voxels(:, k) .* tmpVoxels2Dets(k, :).' / tmpSrc2Det(k);
 end
 
 % Code from InfiniteGreensFunctionSlab.m
@@ -93,7 +94,7 @@ function GsAnalytic = greensSrc(pos)
     mu_eff = sqrt(mua/D); 
 
     % Define bounds on medium
-    xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 30];  
+    xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 1];  
     mmX = 2; mmY = 2; mmZ = 2; 
     [Y X Z] = meshgrid(yBnds(1):mmY:yBnds(2), xBnds(1):mmX:xBnds(2), zBnds(1):mmZ:zBnds(2)); % generate coordinates for slab 
 
@@ -119,7 +120,7 @@ function GsAnalytic = greensDet(pos)
     mu_eff = sqrt(mua/D); 
 
     % Define bounds on medium
-    xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 30];  
+    xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 1];  
     mmX = 2; mmY = 2; mmZ = 2;
 
     [Y X Z] = meshgrid(yBnds(1):mmY:yBnds(2), xBnds(1):mmX:xBnds(2), zBnds(1):mmZ:zBnds(2)); % generate coordinates for slab 
@@ -146,7 +147,7 @@ function GsAnalytic = greensSrc2Det(srcPos, detPos)
     mu_eff = sqrt(mua/D); 
     
     % Define bounds on medium
-    xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 30];   
+    xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 1];   
     mmX = 2; mmY = 2; mmZ = 2;
 
     [Y X Z] = meshgrid(yBnds(1):mmY:yBnds(2), xBnds(1):mmX:xBnds(2), zBnds(1):mmZ:zBnds(2)); % generate coordinates for slab 
