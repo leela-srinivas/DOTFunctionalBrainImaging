@@ -3,6 +3,7 @@
 % Last Updated: April 2nd, 2025
 
 close all; clear
+debug = false;
 
 %% Global Variable Declarations: properties of the brain we're trying to image
 global mua musp nu D xBnds yBnds zBnds mmX mmY mmZ X Y Z voxCrd;
@@ -19,27 +20,70 @@ voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped a
 
 [Y X Z] = meshgrid(yBnds(1):mmY:yBnds(2), xBnds(1):mmX:xBnds(2), zBnds(1):mmZ:zBnds(2)); % generate coordinates for slab 
 
-%% Visualize in 3D
+%% SD Pair Generation
 
+NPerWall = 10; % number of sources/detectors (will probably need separate code generating these pairs later on
+srcs = zeros(4 * NPerWall, 3);
+dets = zeros(4 * NPerWall, 3);
+
+% wall 1
+srcs(1:NPerWall, 1) = yBnds(1);
+srcs(1:NPerWall, 2) = linspace(xBnds(1), xBnds(2), NPerWall);
+
+% wall 2
+srcs(NPerWall+1:2*NPerWall, 1) = linspace(yBnds(1), yBnds(2), NPerWall);
+srcs(NPerWall+1:2*NPerWall, 2) = xBnds(2);
+
+% wall 3
+srcs(2*NPerWall+1:3*NPerWall, 1) = yBnds(2);
+srcs(2*NPerWall+1:3*NPerWall, 2) = linspace(xBnds(2), xBnds(1), NPerWall);
+
+% wall 4
+srcs(3*NPerWall+1:end, 1) = linspace(yBnds(2), yBnds(1), NPerWall);
+srcs(3*NPerWall+1:end, 2) = xBnds(1);
+
+if debug; disp(srcs); end
+
+dets = srcs;
+
+
+
+%srcsMatrix(:, 3) = linspace(zBnds(1), zBnds(2), N);
+
+
+% srcs = [0 30 0; -45 0 0];
+% dets = [0 -30 0; 45 0 0];
 
 
 %% Sensitivity Matrix Generation
-N = 2; % number of SD pairs (will probably need separate code generating these pairs later on
 
-srcs = [0 30 0; -45 0 0];
-dets = [0 -30 0; 45 0 0];
+N = 4 * NPerWall;
+numMeasurements = 4;
+tmpSrc2Det = zeros(1, numMeasurements);
+tmpSrc2Voxels = zeros(numMeasurements, 21390);
+tmpVoxels2Dets = zeros(21390, numMeasurements);
 
-tmpSrc2Voxels = [greensSrc(srcs(1, :)); greensSrc(srcs(2, :))];
-tmpVoxels2Det = [greensDet(dets(1, :)) greensDet(dets(2, :))];
+for i = 1:4
+    for j = 1:3
+        tmpSrc2Voxels(i * j, :) = greensSrc(srcs(i, :));
+        tmpVoxels2Dets(:, i * j) = greensDet(dets(i, :));
+    end
+    disp(i);
+    tmpSrc2Det(i) = greensSrc2Det(srcs(i, :), dets(i, :));
+end
+% tmpSrc2Voxels = [greensSrc(srcs(1, :)); greensSrc(srcs(2, :))];
+% tmpVoxels2Det = [greensDet(dets(1, :)) greensDet(dets(2, :))];
 
-tmpSrc2Det = zeros(1, N);
-tmpSrc2Det = [greensSrc2Det(srcs(1, :), dets(1, :)), greensSrc2Det(srcs(2, :), dets(2, :))];
-% 
-sensitivityMatrix = zeros(N, length(tmpSrc2Voxels));
+%N = length(tmpSrc2Voxels(:, 1));
 
-for i=1:N
+% tmpSrc2Det = zeros(1, N);
+% tmpSrc2Det = [greensSrc2Det(srcs(1, :), dets(1, :)), greensSrc2Det(srcs(2, :), dets(2, :))];
+% % 
+sensitivityMatrix = zeros(numMeasurements, length(tmpSrc2Voxels));
+
+for k=1:2
     %tmpSrc2Dets(i) = greensSrc2Det(srcPos1, detPos1);
-    sensitivityMatrix(i, :) = 1/D * tmpSrc2Voxels(i, :) .* tmpVoxels2Det(:, i).' / tmpSrc2Det(i);
+    sensitivityMatrix(k, :) = 1/D * tmpSrc2Voxels(k, :) .* tmpVoxels2Dets(:, k).' / tmpSrc2Det(k);
 end
 
 % Code from InfiniteGreensFunctionSlab.m
