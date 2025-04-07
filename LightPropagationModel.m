@@ -1,6 +1,6 @@
 %% Forward Problem Light Propagation Model
 % Created March 31st, 2025
-% Last Updated: April 2nd, 2025
+% Last Updated: April 7th, 2025
 
 close all; clear
 debug = false;
@@ -14,7 +14,7 @@ nu = 1.4;
 D = 1/(3*(mua+musp));
 
 % Define bounds on medium
-xBnds = [-30 30]; yBnds = [-45 45]; zBnds = [1 30];  
+xBnds = [0 6]; yBnds = [0 6]; zBnds = [1 30];  
 mmX = 2; mmY = 2; mmZ = 2; 
 voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped as 1D vector
 
@@ -22,7 +22,7 @@ voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped a
 
 %% SD Pair Generation
 
-NPerWall = 10; % number of sources/detectors (will probably need separate code generating these pairs later on
+NPerWall = 3; % number of sources/detectors (will probably need separate code generating these pairs later on
 srcs = zeros(4 * NPerWall, 3);
 dets = zeros(4 * NPerWall, 3);
 
@@ -44,9 +44,6 @@ srcs(3*NPerWall+1:end, 2) = xBnds(1);
 
 if debug; disp(srcs); end
 
-dets = srcs;
-
-
 
 %srcsMatrix(:, 3) = linspace(zBnds(1), zBnds(2), N);
 
@@ -58,7 +55,7 @@ dets = srcs;
 %% Sensitivity Matrix Generation
 
 N = 4 * NPerWall;
-numMeasurements = 4;
+numMeasurements = N * N - 1;
 tmpSrc2Det = zeros(1, numMeasurements);
 tmpSrc2Voxels = zeros(numMeasurements, 21390);
 tmpVoxels2Dets = zeros(21390, numMeasurements);
