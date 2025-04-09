@@ -89,6 +89,14 @@ end
 %     sensitivityMatrix(k, :) = 1/D * tmpSrc2Voxels(:, k) .* tmpVoxels2Dets(k, :).' / tmpSrc2Det(k);
 % end
 
+x = zeros(size(sensitivityMatrix,2),1); x(5503) = 1;
+y = sensitivityMatrix*x;
+y_p = reshape(y, [24 28]);
+figure();
+imagesc(log10(y_p))
+x_hat = imageReconstruction(y, sensitivityMatrix, 0.1);
+figure, sliceViewer(log10(abs(x_hat)),'Colormap',hot(256));
+
 % Code from InfiniteGreensFunctionSlab.m
 function GsAnalytic = greensSrc(pos)
 
