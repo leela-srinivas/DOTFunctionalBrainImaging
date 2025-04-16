@@ -83,13 +83,17 @@ end
 numVoxCrds = length(tmpSrc2Voxels);
 numSDPairs = length(pairs);
 sensitivityMatrix = zeros(numSDPairs, numVoxCrds);
+lightFalloffVals = zeros(numSDPairs, 2);
 
 for i = 1:size(pairs,1)
     j = pairs(i,1);
     k = pairs(i,2);
     tmpSrc2Voxels = greensSrc(srcs(j,:));
     tmpVoxels2Dets = greensDet(dets(k,:));
-    tmpSrc2Det = greensSrc2Det(srcs(j,:),dets(k,:));
+    [tmpSrc2Det, dist] = greensSrc2Det(srcs(j,:),dets(k,:));
+    lightFalloffVals(i, 1) = dist;
+    lightFalloffVals(i, 2) = tmpSrc2Det;
+
 
     sensitivityMatrix(i, :) = 1/D * tmpSrc2Voxels .* tmpVoxels2Dets.' / tmpSrc2Det;
 end
@@ -119,7 +123,26 @@ hold off
 %% Convolving HRF
 
 load('hrf_DOT3.mat');
-conv(hrf, nu);
+%conv(hrf, nu);
+
+%% Simulating Light Falloff
+
+figure();
+scatter(lightFalloffVals(1:numSDPairs/32, 1), log(lightFalloffVals(1:numSDPairs/32, 2))); % only plotting first 32nd, it's all the same anyway
+ylabel("log of SD-pair intensity");
+xlabel("Distance between SD-pair (nm probably)");
+
+% labeling for funsies
+for i = 1:numSDPairs/32
+    labelstr = "(" + pairs(i, 1) + ", " + pairs(i, 2) + ")";
+    
+    text(lightFalloffVals(i, 1), log(lightFalloffVals(i, 2)), labelstr);
+end
+
+
+%% Using Light Falloff to determine which SD-Pairs we use
+
+% take out anything above 40 nm
 
 
 
@@ -174,7 +197,7 @@ function GsAnalytic = greensDet(pos)
 
 end
 
-function GsAnalytic = greensSrc2Det(srcPos, detPos)
+function [GsAnalytic, r] = greensSrc2Det(srcPos, detPos)
 
     mua = .0192; % flags.op.mua_gray=[0.0180,0.0192];
     musp = 0.6726; % flags.op.musp_gray=[0.8359,0.6726];
