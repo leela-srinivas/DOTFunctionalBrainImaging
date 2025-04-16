@@ -120,7 +120,7 @@ end
 
 hold off
 
-%% Convolving HRF
+%% Convolving HRF -- not used
 
 load('hrf_DOT3.mat');
 %conv(hrf, nu);
@@ -143,7 +143,45 @@ end
 %% Using Light Falloff to determine which SD-Pairs we use
 
 % take out anything above 40 nm
+dist_threshold = 40;
 
+newLightFallOffVals = lightFalloffVals(lightFalloffVals(:,1)<=dist_threshold,:);
+boolLightFalloffs = lightFalloffVals(:,1)<=dist_threshold;
+j = 1;
+maxSDPairs = numSDPairs;
+for i = 1:maxSDPairs
+    if boolLightFalloffs(i) == 0
+        sensitivityMatrix(j, :) = [];
+
+        j = j - 1;
+        maxSDPairs = maxSDPairs - 1;
+    end
+    j = j + 1;
+end
+
+%% visualize after taking out extraneous SD pairs
+visualizeAMatrix(sensitivityMatrix);
+
+
+function reshaped_A = visualizeAMatrix(A)
+    
+    numSDPairs = size(A, 1);
+
+    figure();
+    hold on
+    colormap summer
+    for i= 1:numSDPairs
+        reshaped_A = reshape(A(i, :), [71 31 5]);
+        % sgtitle("Sensitivity Matrix: Source " + pairs(i, 1) + ", Detector " + pairs(i, 2));
+        for j = 1:5
+            imagesc((reshaped_A(:, :, j)));
+            title("Sensitivity Matrix");
+            colorbar();
+            pause(0.2);
+        end
+        pause(0.1);
+    end
+end
 
 
 % Code from InfiniteGreensFunctionSlab.m
