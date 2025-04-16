@@ -1,6 +1,6 @@
 %% Forward Problem Light Propagation Model
 % Created March 31st, 2025
-% Last Updated: April 7th, 2025
+% Last Updated: April 9th, 2025
 
 close all; clear
 debug = false;
@@ -23,30 +23,55 @@ voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped a
 
 %% SD Pair Generation
 
-NPerWall = 3; % number of sources/detectors (will probably need separate code generating these pairs later on
 srcs = info.optodes.spos2;
 srcs = cat(2, srcs, zeros(24,1));
 dets = info.optodes.dpos2;
 dets = cat(2, dets, zeros(28,1));
 pairs = info.pairs; pairs = table2array(pairs(1:672,1:2));
 
+figure();
+hold on
+scatter(srcs(:, 1), srcs(:, 2));
+scatter(dets(:, 1), dets(:, 2));
+hold off
+
 if debug; disp(srcs); end
 
+%% SD Pair Generation, Sparse DOT Array Model
 
-%srcsMatrix(:, 3) = linspace(zBnds(1), zBnds(2), N);
+raw_srcs = info.optodes.spos2;
+srcs = raw_srcs(1:2:end, :);
+srcs = cat(2, srcs, zeros(length(srcs), 1));
+numSrcs = length(srcs);
 
+raw_dets = info.optodes.dpos2;
+dets_count = 0;
+for i=1:length(raw_dets)
+    if mod(i, 8) ~= 2 && mod(i, 8) ~= 4 && mod(i, 8) ~= 5 && mod(i, 8) ~= 7
+        
+        dets_count = dets_count + 1;
+        dets(dets_count) = raw_dets(i);
+    end
+end
 
-% srcs = [0 30 0; -45 0 0];
-% dets = [0 -30 0; 45 0 0];
+dets = cat(2, dets, zeros(length(dets),1));
+numDets = length(dets);
 
+raw_pairs = info.pairs; 
+pairs = table2array(raw_pairs(1:2:numDets * numSrcs,1:2));
+pairs(pairs(:, 1) > 12, :) = [];
+%pairs(mod(pairs(:,2),2) == 0, :) = [];
+
+figure();
+hold on
+scatter(srcs(:, 1), srcs(:, 2));
+scatter(dets(:, 1), dets(:, 2));
+hold off
+legend("Sources","Detectors");
+
+%clear raw_dets raw_srcs;
 
 %% Sensitivity Matrix Generation
-
-N = 4 * NPerWall;
-numMeasurements = N * N - 1;
-%tmpSrc2Det = zeros(1, numMeasurements);
-%tmpSrc2Voxels = zeros(numMeasurements, 24);
-%tmpVoxels2Dets = zeros(24, numMeasurements);
 
 for i = 1:2
     tmpSrc2Voxels = greensSrc(srcs(i,:));
@@ -54,6 +79,10 @@ end
 for i = 1:2
     tmpVoxels2Dets = greensDet(dets(i,:));
 end
+
+numVoxCrds = length(tmpSrc2Voxels);
+numSDPairs = length(pairs);
+sensitivityMatrix = zeros(numSDPairs, numVoxCrds);
 
 for i = 1:size(pairs,1)
     j = pairs(i,1);
@@ -65,48 +94,20 @@ for i = 1:size(pairs,1)
     sensitivityMatrix(i, :) = 1/D * tmpSrc2Voxels .* tmpVoxels2Dets.' / tmpSrc2Det;
 end
 
-% for i = 1:N
-%     for j = 1:N - 1
-%         tmpSrc2Voxels(((i - 1) * N + j), :) = greensSrc(srcs(i, :));
-%         tmpVoxels2Dets(:, ((i - 1) * N + j)) = greensDet(dets(i, :));
-%     end
-%     tmpSrc2Det(i) = greensSrc2Det(srcs(i, :), dets(i, :));
-% end
-% tmpSrc2Voxels = [greensSrc(srcs(1, :)); greensSrc(srcs(2, :))];
-% tmpVoxels2Det = [greensDet(dets(1, :)) greensDet(dets(2, :))];
-
-%N = length(tmpSrc2Voxels(:, 1));
-
-% tmpSrc2Det = zeros(1, N);
-% tmpSrc2Det = [greensSrc2Det(srcs(1, :), dets(1, :)), greensSrc2Det(srcs(2, :), dets(2, :))];
-% % 
-
-%sensitivityMatrix = zeros(numMeasurements, length(tmpSrc2Voxels));
-
-% for k=1:(24*28)
-%     %tmpSrc2Dets(i) = greensSrc2Det(srcPos1, detPos1);
-%     disp(k)
-%     sensitivityMatrix(k, :) = 1/D * tmpSrc2Voxels(:, k) .* tmpVoxels2Dets(k, :).' / tmpSrc2Det(k);
-% end
-
 %% visualizing A matrix
 
 % sensitivity banana is all x's for one y
-% y is all the source-detector pairs (measurements). x is all the voxel
-% crds.
-
-numSDPairs = 672;
-numVoxCrds = 11005;
+% y is all the source-detector pairs (measurements). x is all the voxel crds.
 
 figure();
 hold on
-colormap parula
+colormap summer
 for i= 1:numSDPairs
     reshaped_A = reshape(sensitivityMatrix(i, :), [71 31 5]);
-
-    for j = 1:5
+    % sgtitle("Sensitivity Matrix: Source " + pairs(i, 1) + ", Detector " + pairs(i, 2));
+    for j = 1:2
         imagesc((reshaped_A(:, :, j)));
-        title("Source " + pairs(i, 1) + ", Detector " + pairs(i, 2) + ", Z = " + j);
+        title("Sensitivity Matrix: Source " + pairs(i, 1) + ", Detector " + pairs(i, 2) + ", Z = " + j);
         colorbar();
         pause(0.2);
     end
@@ -114,6 +115,11 @@ for i= 1:numSDPairs
 end
 
 hold off
+
+%% Convolving HRF
+
+load('hrf_DOT3.mat');
+conv(hrf, nu);
 
 
 
@@ -133,9 +139,7 @@ function GsAnalytic = greensSrc(pos)
     [Y X Z] = meshgrid(yBnds(1):mmY:yBnds(2), xBnds(1):mmX:xBnds(2), zBnds(1):mmZ:zBnds(2)); % generate coordinates for slab 
     voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped as 1D vector
     nX = size(X,1); nY = size(X,2); nZ = size(X,3); % volume is nX x nY x nZ voxels
-    
-    %srcPos = [0 0 0]; % source position, in 3D coordinates 
-    
+
     r = pdist2(pos,voxCrd); % distance from source to each voxel
     
     GsAnalytic = 1./(4*pi*D*r).*exp(-mu_eff*r); % Green's function, each voxel
