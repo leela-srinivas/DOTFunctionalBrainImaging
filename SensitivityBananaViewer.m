@@ -1,6 +1,8 @@
 %% Forward Problem Light Propagation Model
+% Constructs A matrix, validates with viewer, simulates light falloff to
+% select best SD pairs
 % Created March 31st, 2025
-% Last Updated: April 9th, 2025
+% Last Updated: April 16th, 2025
 
 close all; clear
 debug = false;
@@ -159,9 +161,25 @@ for i = 1:maxSDPairs
     j = j + 1;
 end
 
-%% visualize after taking out extraneous SD pairs
-visualizeAMatrix(sensitivityMatrix);
+if debug
+    visualizeAMatrix(sensitivityMatrix); % to validate A
+end
 
+%% Visualize impulse with new sparse matrix
+
+x = zeros(11005, 1);
+x(7432) = 1; % arbitrarily chosen
+y = sensitivityMatrix * x;
+lambda = 10;
+noise_factor = 0;
+
+result = imageReconstruction(y, sensitivityMatrix, lambda, noise_factor);
+
+%% Visualize Data with new sparse matrix
+
+
+
+%% weeee functions
 
 function reshaped_A = visualizeAMatrix(A)
     

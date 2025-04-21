@@ -1,4 +1,3 @@
-%% ReconstructImageVolume_LogColor_NoiseControlled.m
 % This script reconstructs a 3D image from DOT/fNIRS data with noise added
 % according to Week 11 instructions: Gaussian noise added to log-ratio measurements.
 % It uses Tikhonov regularization and displays log-scaled 3D images with volumeViewer.
@@ -25,8 +24,7 @@ target_nsr = 0.05;  % try 0.01 to 0.1 (5% noise)
 signal_norm = norm(y_clean_t);
 noise_std = target_nsr * signal_norm / sqrt(numel(y_clean_t));
 
-% Add Gaussian noise to the measurement vector
-y_noisy_t = y_clean_t + noise_std * randn(size(y_clean_t));
+y_noisy_t = y_clean_t + noise_std * randn(size(y_clean_t)); % Add Gaussian noise to the measurement vector
 
 %% Step 4: Tikhonov Regularized Image Reconstruction
 lambda = 1;  % Regularization parameter (adjustable)

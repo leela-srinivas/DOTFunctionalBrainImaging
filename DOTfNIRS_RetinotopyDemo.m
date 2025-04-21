@@ -75,7 +75,3 @@ hold on
 %show stimulus repetition start times 
 for i = 1:length(info.paradigm.Pulse_2), xline(info.paradigm.synchpts(info.paradigm.Pulse_2(i))), end
 
-
-
-
-
