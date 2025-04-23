@@ -1,14 +1,6 @@
-function [x] = imageReconstruction(y, A, lambda, noise_factor)
-
-    signal_norm = norm(y);
-    noise_std = noise_factor * signal_norm / sqrt(numel(y));
-    y_with_noise = y + noise_std * randn(size(y));
-
-    disp("Inverting sensitivity matrix");
+function [x] = imageReconstruction(y, A, lambda)
     A_reg = inv(A'*A + lambda*eye(size(A,2)))*A';
-
-    disp("Getting x_hat");
-    x_hat = A_reg*y_with_noise;
+    x_hat = A_reg*y;
 
     % Define bounds on medium
     xBnds = [-70 70]; yBnds = [-30 30]; zBnds = [1 10];  
@@ -17,6 +9,4 @@ function [x] = imageReconstruction(y, A, lambda, noise_factor)
     voxCrd = double([X(:) Y(:) Z(:)]); % coordinates (mm) for each voxel, reshaped as 1D vector
 
     x = reshape(x_hat, size(X));
-    sliceViewer(x,'Colormap',hot(256))
 end
-
